@@ -1,0 +1,49 @@
+# Use this for quick LOCAL testing on your EC2/laptop before deploying to Kubernetes.
+# Run: docker-compose up --build
+
+services:
+  mysql:
+    build: ./src/database
+    image: three-tier-mysql:local
+    container_name: mysql-db
+    restart: always
+    env_file: ./src/database/.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./src/backend
+    image: three-tier-backend:local
+    container_name: backend-api
+    restart: always
+    env_file: ./src/backend/.env
+    environment:
+      - DB_HOST=mysql
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./src/frontend
+      args:
+        REACT_APP_API_URL: http://localhost:5000
+    image: three-tier-frontend:local
+    container_name: frontend-app
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql-data:

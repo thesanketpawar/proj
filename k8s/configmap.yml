@@ -1,0 +1,11 @@
+# General/shared ConfigMap - common values used across the project
+# (backend-configmap.yml and frontend-configmap.yml hold tier-specific config)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: common-configmap
+  namespace: three-tier
+data:
+  APP_NAME: "three-tier-devops-project"
+  APP_ENV: "production"
+  APP_VERSION: "1.0.0"

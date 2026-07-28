@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-configmap
+  namespace: three-tier
+data:
+  # In practice this is baked at build-time via Docker ARG, but kept here
+  # so it's also available for runtime reference / documentation.
+  REACT_APP_API_URL: "http://backend-service:5000"

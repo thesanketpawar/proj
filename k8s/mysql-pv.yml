@@ -1,0 +1,18 @@
+# PersistentVolume - the actual storage on the worker node.
+# On AWS EKS you'd normally use the EBS CSI driver + StorageClass instead
+# of hostPath, but hostPath keeps this demo runnable on any cluster
+# (kind/minikube/self-managed EC2 worker nodes) without extra addons.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mysql-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data/mysql"
