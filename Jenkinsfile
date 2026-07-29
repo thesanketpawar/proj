@@ -16,11 +16,6 @@
 pipeline {
     agent any
 
-    tools {
-        // Configure this name under Jenkins > Global Tool Configuration
-        // (or use dockerized sonar-scanner instead)
-    }
-
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')     // Jenkins credential ID
         KUBECONFIG_CRED       = credentials('kubeconfig-file')     // Secret file credential
