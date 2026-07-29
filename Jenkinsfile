@@ -10,7 +10,7 @@
 //   We detect WHICH folder changed (src/frontend vs src/backend) using
 //   git diff against the previous commit, and only build/push/deploy
 //   the component(s) that actually changed. This avoids rebuilding the
-//   whole app for a one-line frontend fix.
+//   whole app for a one-line frontend fix. Fixed
 // ============================================================
 
 pipeline {
