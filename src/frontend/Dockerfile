@@ -5,7 +5,7 @@ COPY package*.json ./
 RUN npm install
 COPY . .
 # CI/CD passes the real API URL as a build arg (see Jenkinsfile)
-ARG REACT_APP_API_URL=http://localhost:5000
+ARG REACT_APP_API_URL=""
 ENV REACT_APP_API_URL=$REACT_APP_API_URL
 RUN npm run build
 

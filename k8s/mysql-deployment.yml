@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: mysql
-          image: <DOCKERHUB_USERNAME>/three-tier-mysql:latest
+          image: mysql:latest
           ports:
             - containerPort: 3306
           envFrom:

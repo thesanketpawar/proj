@@ -23,7 +23,7 @@ spec:
       containers:
         - name: backend
           # Jenkins replaces :latest with the actual build number/commit SHA at deploy time
-          image: <DOCKERHUB_USERNAME>/three-tier-backend:latest
+          image: thesanketpawar/three-tier-backend:latest
           ports:
             - containerPort: 5000
           envFrom:

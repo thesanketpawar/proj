@@ -4,7 +4,7 @@ import './App.css';
 
 // Backend URL is injected at build/runtime via environment variable.
 // In Kubernetes this points to the Ingress path / backend service.
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const const API_URL = process.env.REACT_APP_API_URL || '';
 
 function App() {
   const [employees, setEmployees] = useState([]);
