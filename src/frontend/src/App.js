@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
 
+const API_URL = process.env.REACT_APP_API_URL || '';
 // Backend URL is injected at build/runtime via environment variable.
 // In Kubernetes this points to the Ingress path / backend service.
-const const API_URL = process.env.REACT_APP_API_URL || '';
-
 function App() {
   const [employees, setEmployees] = useState([]);
   const [form, setForm] = useState({ name: '', role: '', department: '' });

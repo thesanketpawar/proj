@@ -6,7 +6,6 @@ metadata:
   name: three-tier-ingress
   namespace: three-tier
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   ingressClassName: nginx
