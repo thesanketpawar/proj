@@ -17,7 +17,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')     // Jenkins credential ID
+        DOCKERHUB_CREDENTIALS = credentials('docker-creds')     // Jenkins credential ID
         KUBECONFIG_CRED       = credentials('kubeconfig-file')     // Secret file credential
         SONAR_TOKEN            = credentials('sonarqube-token')     // Secret text credential
         IMAGE_TAG              = "${env.BUILD_NUMBER}-${env.GIT_COMMIT?.take(7) ?: 'local'}"
