@@ -85,6 +85,20 @@ pipeline {
             }
         }
 
+
+        stage('Wait For SonarQube') {
+            steps {
+                sh '''
+                echo "Waiting for SonarQube..."
+                until curl -s http://13.234.119.46:9000/api/system/status | grep -q '"status":"UP"'
+                do
+                    echo "SonarQube is not ready..."
+                    sleep 10
+                done
+                echo "SonarQube is ready"
+                '''
+            }
+        }
         stage('SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('sonarqube-server') {   // name configured in Jenkins > Configure System
