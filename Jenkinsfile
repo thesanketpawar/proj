@@ -404,42 +404,39 @@ pipeline {
 
         stage('Trivy Security Scan') {
 
+            when {
+                anyOf {
+                environment name: 'BUILD_BACKEND', value: 'true'
+                environment name: 'BUILD_FRONTEND', value: 'true'
+                }
+            }
 
             steps {
 
+                script {
 
-                sh '''
+                if(env.BUILD_BACKEND == 'true') {
 
-                echo "Scanning Backend Image"
+                    sh """
+                    trivy image --exit-code 0 \
+                    ${DOCKERHUB_USER}/three-tier-backend:${IMAGE_TAG}
+                    """
 
-                trivy image \
+                }
 
-                --exit-code 0 \
+                    if(env.BUILD_FRONTEND == 'true') {
 
-                --severity HIGH,CRITICAL \
-
-                $DOCKERHUB_USER/three-tier-backend:$IMAGE_TAG || true
-
-
-
-
-                echo "Scanning Frontend Image"
-
-
-                trivy image \
-
-                --exit-code 0 \
-
-                --severity HIGH,CRITICAL \
-
-                $DOCKERHUB_USER/three-tier-frontend:$IMAGE_TAG || true
-
-
-                '''
+                    sh """
+                    trivy image --exit-code 0 \
+                    ${DOCKERHUB_USER}/three-tier-frontend:${IMAGE_TAG}
+                    """
 
             }
 
         }
+
+    }
+}
 
 
 
