@@ -270,39 +270,23 @@ pipeline {
 
 
 
-
-
-
         stage('SonarQube Analysis') {
-
 
             steps {
 
-
                 withSonarQubeEnv('sonarqube-server') {
 
-
-                    sh '''
-
-                    sonar-scanner \
-
-                    -Dsonar.projectKey=three-tier-devops-project \
-
-                    -Dsonar.sources=src,terraform,k8s \
-
-                    -Dsonar.javascript.lcov.reportPaths=src/backend/coverage/lcov.info,src/frontend/coverage/lcov.info \
-
-                    -Dsonar.nodejs.executable=$(which node)
-
-                    '''
-
-                }
-
-            }
+                sh '''
+                sonar-scanner \
+                -Dsonar.projectKey=three-tier-devops-project \
+                -Dsonar.sources=src/backend,src/frontend,terraform,k8s \
+                -Dsonar.exclusions=node_modules/**,coverage/**,build/**
+            '''
 
         }
 
-
+    }
+}
 
 
 
@@ -324,9 +308,6 @@ pipeline {
             }
 
         }
-
-
-
 
 
 
