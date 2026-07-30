@@ -48,9 +48,9 @@ pipeline {
                     ).trim()
                     echo "Changed files:\n${changedFiles}"
 
-                    env.BUILD_FRONTEND = changedFiles.contains('src/frontend/') ? 'true' : 'false'
-                    env.BUILD_BACKEND  = changedFiles.contains('src/backend/')  ? 'true' : 'false'
-                    env.BUILD_DATABASE = changedFiles.contains('src/database/') ? 'true' : 'false'
+                    env.BUILD_FRONTEND = 'true'
+                    env.BUILD_BACKEND  = 'true'
+                    env.BUILD_DATABASE = 'true'
 
                     // First-ever build (no HEAD~1) or infra/k8s-only changes -> build everything once
                     if (changedFiles == '' ) {
@@ -90,7 +90,7 @@ pipeline {
             steps {
                 sh '''
                 echo "Waiting for SonarQube..."
-                until curl -s http://13.234.119.46:9000/api/system/status | grep -q '"status":"UP"'
+                until curl -s http://localhost:9000/api/system/status | grep -q '"status":"UP"'
                 do
                     echo "SonarQube is not ready..."
                     sleep 10
@@ -114,7 +114,7 @@ pipeline {
 
         stage('Quality Gate') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
+                timeout(time: 10, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
                 }
             }
