@@ -104,10 +104,11 @@ pipeline {
                 withSonarQubeEnv('sonarqube-server') {   // name configured in Jenkins > Configure System
                     sh """
                         sonar-scanner \
-                          -Dsonar.projectKey=three-tier-devops-project \
-                          -Dsonar.sources=. \
-                          -Dsonar.javascript.lcov.reportPaths=src/backend/coverage/lcov.info,src/frontend/coverage/lcov.info
-                    """
+                            -Dsonar.projectKey=three-tier-devops-project \
+                            -Dsonar.sources=. \
+                            -Dsonar.javascript.lcov.reportPaths=src/backend/coverage/lcov.info,src/frontend/coverage/lcov.info \
+                            -Dsonar.nodejs.executable=$(which node)
+                        """
                 }
             }
         }
