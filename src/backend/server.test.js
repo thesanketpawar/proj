@@ -32,3 +32,6 @@ describe('Backend API', () => {
     expect(res.statusCode).toBe(400);
   });
 });
+afterAll(() => {
+    jest.clearAllMocks();
+});
