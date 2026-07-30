@@ -105,7 +105,7 @@ pipeline {
                     sh """
                         sonar-scanner \
                             -Dsonar.projectKey=three-tier-devops-project \
-                            -Dsonar.sources=. \
+                            -Dsonar.sources=src/backend,src/frontend,terraform,k8s \
                             -Dsonar.javascript.lcov.reportPaths=src/backend/coverage/lcov.info,src/frontend/coverage/lcov.info \
                             -Dsonar.nodejs.executable=$(which node)
                         """
