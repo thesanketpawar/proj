@@ -97,9 +97,12 @@ app.delete('/api/employees/:id', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', async () => {
-  console.log(`🚀 Backend server running on port ${PORT}`);
-  await waitForDb();
-});
+let server;
 
-module.exports = app;
+if (require.main === module) {
+    server = app.listen(PORT, () => {
+        console.log(`🚀 Backend server running on port ${PORT}`);
+    });
+}
+
+module.exports = { app, server };
