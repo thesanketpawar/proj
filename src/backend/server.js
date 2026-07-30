@@ -114,57 +114,34 @@ app.get('/api/employees',async(req,res)=>{
 
 // Add employee
 
-app.post('/api/employees',async(req,res)=>{
+app.post('/api/employees', async (req, res) => {
+  try {
+    const { name, role, department } = req.body;
 
-    try{
-
-        const {
-            name,
-            role,
-            department
-        }=req.body;
-
-
-        const [result]=await db.query(
-
-            'INSERT INTO employees(name,role,department) VALUES(?,?,?)',
-
-            [
-                name,
-                role,
-                department
-            ]
-
-        );
-
-
-        res.status(201).json({
-
-            id:result.insertId,
-
-            name,
-
-            role,
-
-            department
-
-        });
-
-
+    if (!name || !role || !department) {
+      return res.status(400).json({
+        error: 'name, role and department are required'
+      });
     }
 
-    catch(err){
+    const [result] = await db.query(
+      'INSERT INTO employees (name, role, department) VALUES (?, ?, ?)',
+      [name, role, department]
+    );
 
-        console.log(err);
+    res.status(201).json({
+      id: result.insertId,
+      name,
+      role,
+      department
+    });
 
-        res.status(500).json({
-
-            error:"Failed adding employee"
-
-        });
-
-    }
-
+  } catch(err){
+      console.error(err);
+      res.status(500).json({
+        error:'Failed to add employee'
+      });
+  }
 });
 
 
