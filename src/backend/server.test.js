@@ -55,16 +55,14 @@ describe('Backend API', () => {
 
 
 
-    test('POST /api/employees without body should return 400', async () => {
+test('POST /api/employees without body should return 400', async () => {
 
-        const res = await request(app)
-            .post('/api/employees')
-            .send({});
+    const res = await request(app)
+        .post('/api/employees');
 
+    expect(res.statusCode).toBe(400);
 
-        expect(res.statusCode).toBe(400);
-
-    });
+});
 
 
 });
