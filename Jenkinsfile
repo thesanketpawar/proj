@@ -1,4 +1,3 @@
-```groovy
 // ============================================================
 // Three-Tier DevOps Project - Multibranch CI/CD Pipeline
 //
