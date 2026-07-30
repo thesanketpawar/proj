@@ -1,7 +1,7 @@
 /**
  * Basic tests - used to generate coverage report for SonarQube analysis
  */
-const request = require('supertest');
+const {app} = require('./server');
 
 // Mock mysql2 so tests don't need a real DB connection
 jest.mock('mysql2', () => ({
