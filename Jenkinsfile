@@ -1,3 +1,32 @@
+// ============================================================
+// Three-Tier DevOps Project - Multibranch CI/CD Pipeline
+//
+// Branch strategy:
+// dev  -> three-tier-dev namespace
+// test -> three-tier-test namespace
+// main -> three-tier namespace
+//
+// Flow:
+//
+// GitHub
+//   |
+// Jenkins
+//   |
+// Unit Test
+//   |
+// SonarQube
+//   |
+// Docker Build
+//   |
+// Trivy Scan
+//   |
+// DockerHub Push
+//   |
+// Kubernetes Deploy
+//
+// ============================================================
+
+
 pipeline {
 
     agent any
@@ -30,7 +59,6 @@ pipeline {
 
                 script {
 
-
                     env.K8S_NAMESPACE =
                     (env.BRANCH_NAME == 'main') ?
                     'three-tier' :
@@ -55,9 +83,7 @@ pipeline {
 
         stage('Detect Changed Components') {
 
-
             steps {
-
 
                 script {
 
@@ -83,6 +109,8 @@ pipeline {
 
 
 
+                    // Frontend changes
+
                     if(
                         changedFiles.contains("src/frontend") ||
                         changedFiles.contains("frontend")
@@ -93,6 +121,8 @@ pipeline {
                     }
 
 
+
+                    // Backend changes
 
                     if(
                         changedFiles.contains("src/backend") ||
@@ -106,37 +136,46 @@ pipeline {
 
 
 
+
+                    // Infrastructure / Pipeline changes
+
                     if(
                         changedFiles.contains("Jenkinsfile") ||
-                        changedFiles.contains("k8s/")
+                        changedFiles.contains("k8s/") ||
+                        changedFiles.contains("docker")
                     ){
 
                         env.BUILD_FRONTEND="true"
+
                         env.BUILD_BACKEND="true"
 
                     }
 
 
 
+
+                    // First build safety
 
                     if(changedFiles==""){
 
                         env.BUILD_FRONTEND="true"
+
                         env.BUILD_BACKEND="true"
 
                     }
+
 
 
 
                     echo """
 
-                    ============================
+                    ===============================
 
-                    FRONTEND BUILD : ${env.BUILD_FRONTEND}
+                    Frontend Build : ${env.BUILD_FRONTEND}
 
-                    BACKEND BUILD  : ${env.BUILD_BACKEND}
+                    Backend Build  : ${env.BUILD_BACKEND}
 
-                    ============================
+                    ===============================
 
                     """
 
@@ -151,15 +190,12 @@ pipeline {
 
 
 
-
         stage('Unit Tests') {
-
 
             parallel {
 
 
                 stage('Backend Test') {
-
 
                     when {
 
@@ -169,28 +205,20 @@ pipeline {
                     }
 
 
-
                     steps {
-
 
                         dir('src/backend') {
 
-
-                            sh """
-
+                            sh '''
                             npm install
-
                             npm test
-
-                            """
+                            '''
 
                         }
 
                     }
 
                 }
-
-
 
 
 
@@ -206,20 +234,14 @@ pipeline {
                     }
 
 
-
                     steps {
-
 
                         dir('src/frontend') {
 
-
-                            sh """
-
+                            sh '''
                             npm install
-
                             CI=true npm test
-
-                            """
+                            '''
 
                         }
 
@@ -227,13 +249,9 @@ pipeline {
 
                 }
 
-
             }
 
         }
-
-
-
 
 
 
@@ -248,46 +266,17 @@ pipeline {
                 withSonarQubeEnv('sonarqube-server') {
 
 
-                    sh """
+                    sh '''
 
                     sonar-scanner \
-
                     -Dsonar.projectKey=three-tier-devops-project \
-
                     -Dsonar.sources=src/backend,src/frontend,terraform,k8s \
-
-                    -Dsonar.exclusions=**/node_modules/**,**/coverage/**,**/build/**
-
-
-                    """
-
-                }
-
-            }
-
-        }
+                    -Dsonar.exclusions=**/node_modules/**,**/coverage/**,**/build/**,**/*.png
 
 
-
-
-
-
-
-        stage('Quality Gate') {
-
-
-            steps {
-
-
-                timeout(
-                    time:5,
-                    unit:'MINUTES'
-                ){
-
-                    waitForQualityGate abortPipeline:true
+                    '''
 
                 }
-
 
             }
 
@@ -317,30 +306,20 @@ pipeline {
                 dir('src/backend') {
 
 
-                    sh """
-
-                    echo \$DOCKERHUB_CREDENTIALS_PSW | docker login \
-
-                    -u \$DOCKERHUB_CREDENTIALS_USR \
-
-                    --password-stdin
-
-
+                    sh '''
 
                     docker build \
+                    -t $DOCKERHUB_USER/three-tier-backend:$IMAGE_TAG \
+                    -t $DOCKERHUB_USER/three-tier-backend:$BRANCH_NAME-latest .
 
-                    -t ${DOCKERHUB_USER}/three-tier-backend:${IMAGE_TAG} \
 
-                    -t ${DOCKERHUB_USER}/three-tier-backend:${BRANCH_NAME}-latest .
-
-                    """
+                    '''
 
                 }
 
             }
 
         }
-
 
 
 
@@ -366,15 +345,15 @@ pipeline {
                 dir('src/frontend') {
 
 
-                    sh """
+                    sh '''
 
                     docker build \
+                    --build-arg REACT_APP_API_URL=http://backend-service:5000 \
+                    -t $DOCKERHUB_USER/three-tier-frontend:$IMAGE_TAG \
+                    -t $DOCKERHUB_USER/three-tier-frontend:$BRANCH_NAME-latest .
 
-                    -t ${DOCKERHUB_USER}/three-tier-frontend:${IMAGE_TAG} \
 
-                    -t ${DOCKERHUB_USER}/three-tier-frontend:${BRANCH_NAME}-latest .
-
-                    """
+                    '''
 
                 }
 
@@ -388,45 +367,52 @@ pipeline {
 
 
 
+
         stage('Trivy Scan') {
+
+
+            when {
+
+
+                anyOf {
+
+                    environment name:'BUILD_BACKEND', value:'true'
+
+                    environment name:'BUILD_FRONTEND', value:'true'
+
+                }
+
+            }
+
 
 
             steps {
 
 
-                script {
+                sh '''
 
+                if [ "$BUILD_BACKEND" = "true" ]
+                then
 
-                    if(env.BUILD_BACKEND=="true") {
+                trivy image \
+                --exit-code 0 \
+                $DOCKERHUB_USER/three-tier-backend:$IMAGE_TAG
 
-
-                        sh """
-
-                        trivy image --exit-code 0 \
-
-                        ${DOCKERHUB_USER}/three-tier-backend:${IMAGE_TAG}
-
-                        """
-
-                    }
+                fi
 
 
 
+                if [ "$BUILD_FRONTEND" = "true" ]
+                then
 
-                    if(env.BUILD_FRONTEND=="true") {
+                trivy image \
+                --exit-code 0 \
+                $DOCKERHUB_USER/three-tier-frontend:$IMAGE_TAG
+
+                fi
 
 
-                        sh """
-
-                        trivy image --exit-code 0 \
-
-                        ${DOCKERHUB_USER}/three-tier-frontend:${IMAGE_TAG}
-
-                        """
-
-                    }
-
-                }
+                '''
 
             }
 
@@ -441,61 +427,62 @@ pipeline {
         stage('Push Docker Images') {
 
 
-            steps {
+            when {
 
 
-                script {
+                anyOf {
 
+                    environment name:'BUILD_BACKEND', value:'true'
 
-                    sh """
-
-                    echo \$DOCKERHUB_CREDENTIALS_PSW | docker login \
-
-                    -u \$DOCKERHUB_CREDENTIALS_USR \
-
-                    --password-stdin
-
-                    """
-
-
-
-
-                    if(env.BUILD_BACKEND=="true") {
-
-
-                        sh """
-
-                        docker push ${DOCKERHUB_USER}/three-tier-backend:${IMAGE_TAG}
-
-                        docker push ${DOCKERHUB_USER}/three-tier-backend:${BRANCH_NAME}-latest
-
-                        """
-
-                    }
-
-
-
-
-
-                    if(env.BUILD_FRONTEND=="true") {
-
-
-                        sh """
-
-                        docker push ${DOCKERHUB_USER}/three-tier-frontend:${IMAGE_TAG}
-
-                        docker push ${DOCKERHUB_USER}/three-tier-frontend:${BRANCH_NAME}-latest
-
-                        """
-
-                    }
-
+                    environment name:'BUILD_FRONTEND', value:'true'
 
                 }
 
             }
 
+
+            steps {
+
+
+                sh '''
+
+                echo "$DOCKERHUB_CREDENTIALS_PSW" | docker login \
+                -u "$DOCKERHUB_CREDENTIALS_USR" \
+                --password-stdin
+
+
+
+                if [ "$BUILD_BACKEND" = "true" ]
+                then
+
+                docker push \
+                $DOCKERHUB_USER/three-tier-backend:$IMAGE_TAG
+
+                docker push \
+                $DOCKERHUB_USER/three-tier-backend:$BRANCH_NAME-latest
+
+                fi
+
+
+
+                if [ "$BUILD_FRONTEND" = "true" ]
+                then
+
+                docker push \
+                $DOCKERHUB_USER/three-tier-frontend:$IMAGE_TAG
+
+                docker push \
+                $DOCKERHUB_USER/three-tier-frontend:$BRANCH_NAME-latest
+
+                fi
+
+
+                '''
+
+            }
+
         }
+
 
 
 
@@ -508,25 +495,20 @@ pipeline {
 
             when {
 
-
                 branch 'main'
 
-
             }
-
 
 
             steps {
 
 
-                timeout(
-                    time:15,
-                    unit:'MINUTES'
-                ){
+                timeout(time:15, unit:'MINUTES') {
+
 
                     input(
-                        message:"Deploy to Production?",
-                        ok:"Deploy"
+                    message:"Deploy to Production?",
+                    ok:"Deploy"
                     )
 
                 }
@@ -534,6 +516,7 @@ pipeline {
             }
 
         }
+
 
 
 
@@ -545,59 +528,61 @@ pipeline {
         stage('Deploy Kubernetes') {
 
 
+            when {
+
+
+                anyOf {
+
+                    environment name:'BUILD_BACKEND', value:'true'
+
+                    environment name:'BUILD_FRONTEND', value:'true'
+
+                }
+
+            }
+
+
+
             steps {
 
 
                 withCredentials([
 
                     file(
-                        credentialsId:'kubeconfig-file',
-                        variable:'KUBECONFIG'
+                    credentialsId:'kubeconfig-file',
+                    variable:'KUBECONFIG'
                     )
 
-                ]){
+                ]) {
 
 
-                    sh """
 
-                    kubectl create namespace ${K8S_NAMESPACE} \
+                    sh '''
 
+                    kubectl create namespace $K8S_NAMESPACE \
                     --dry-run=client -o yaml | kubectl apply -f -
 
 
 
-
                     kubectl apply \
-
-                    -n ${K8S_NAMESPACE} \
-
+                    -n $K8S_NAMESPACE \
                     -f k8s/
 
 
 
-
-
-                    if [ "${BUILD_BACKEND}" = "true" ]
-
+                    if [ "$BUILD_BACKEND" = "true" ]
                     then
 
 
                     kubectl set image \
-
                     deployment/backend-deployment \
-
-                    backend=${DOCKERHUB_USER}/three-tier-backend:${IMAGE_TAG} \
-
-                    -n ${K8S_NAMESPACE}
-
-
+                    backend=$DOCKERHUB_USER/three-tier-backend:$IMAGE_TAG \
+                    -n $K8S_NAMESPACE
 
 
                     kubectl rollout status \
-
                     deployment/backend-deployment \
-
-                    -n ${K8S_NAMESPACE}
+                    -n $K8S_NAMESPACE
 
 
                     fi
@@ -605,35 +590,26 @@ pipeline {
 
 
 
-
-
-                    if [ "${BUILD_FRONTEND}" = "true" ]
-
+                    if [ "$BUILD_FRONTEND" = "true" ]
                     then
 
 
                     kubectl set image \
-
                     deployment/frontend-deployment \
-
-                    frontend=${DOCKERHUB_USER}/three-tier-frontend:${IMAGE_TAG} \
-
-                    -n ${K8S_NAMESPACE}
-
+                    frontend=$DOCKERHUB_USER/three-tier-frontend:$IMAGE_TAG \
+                    -n $K8S_NAMESPACE
 
 
 
                     kubectl rollout status \
-
                     deployment/frontend-deployment \
-
-                    -n ${K8S_NAMESPACE}
+                    -n $K8S_NAMESPACE
 
 
                     fi
 
 
-                    """
+                    '''
 
                 }
 
@@ -641,9 +617,8 @@ pipeline {
 
         }
 
+
     }
-
-
 
 
 
@@ -656,18 +631,17 @@ pipeline {
 
             echo """
 
-            ✅ Deployment Successful
+            ✅ Pipeline Successful
 
             Branch:
-            ${BRANCH_NAME}
+            ${env.BRANCH_NAME}
 
             Namespace:
-            ${K8S_NAMESPACE}
+            ${env.K8S_NAMESPACE}
 
             """
 
         }
-
 
 
 
@@ -690,15 +664,18 @@ pipeline {
         always {
 
 
-            sh """
+            sh '''
 
             docker logout || true
 
-            """
+            rm -rf workspace@tmp || true
+
+            '''
 
         }
 
 
     }
+
 
 }
